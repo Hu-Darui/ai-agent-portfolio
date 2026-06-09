@@ -1,0 +1,11 @@
+openai
+numpy
+fastapi
+uvicorn
+pymupdf
+faiss-cpu
+rank-bm25
+jieba
+langchain-openai
+langgraph
+pydantic
