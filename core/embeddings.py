@@ -50,3 +50,53 @@ class VectorDB:
             lines = [l.strip() for l in f if l.strip()]
         self.add_batch(lines)
         return self
+    def load_from_pdf(self, filepath: str, chunk_size: int = 300):
+        """从 PDF 加载知识库，自动切片"""
+        import fitz
+        
+        doc = fitz.open(filepath)
+        full_text = ""
+        for page in doc:
+            full_text += page.get_text()
+        doc.close()
+        
+        # 按段落切片
+        chunks = self._chunk_text(full_text, chunk_size)
+        self.add_batch(chunks)
+        print(f"从 PDF 加载了 {len(chunks)} 个片段")
+        return self
+
+    def _chunk_text(self, text: str, chunk_size: int = 300) -> list:
+        """递归切片"""
+        if len(text) <= chunk_size:
+            return [text] if text.strip() else []
+        
+        chunks = []
+        paragraphs = text.split("\n\n")
+        
+        if len(paragraphs) > 1:
+            current = ""
+            for para in paragraphs:
+                if len(current) + len(para) <= chunk_size:
+                    current += para + "\n\n"
+                else:
+                    if current.strip():
+                        chunks.append(current.strip())
+                    current = para + "\n\n"
+            if current.strip():
+                chunks.append(current.strip())
+            return chunks
+        
+        # 段落切不了，按句子切
+        sentences = text.split("。")
+        current = ""
+        for s in sentences:
+            if len(current) + len(s) <= chunk_size:
+                current += s + "。"
+            else:
+                if current.strip():
+                    chunks.append(current.strip())
+                current = s + "。"
+        if current.strip():
+            chunks.append(current.strip())
+        return chunks
